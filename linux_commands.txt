@@ -1,0 +1,58 @@
+### --- DOWNLOAD GENOME AND TAXONOMY DATA --- ###
+
+# Download annotated proteins from NCBI prokaryotic reference genomes on 7/20/26.
+datasets download genome taxon 2 --reference --include protein --dehydrated --filename prot.zip 
+unzip prot.zip -d bacteria_ref 
+datasets rehydrate --directory prot  --gzip 
+gzip -r -d ./
+
+# Concatenate all protein sequences into one multifasta file database for phmmer search.
+find . -name \*.faa -type f -exec cat {} + > /workdir/crp86/all_prot.fasta 
+
+# Download genomes from NCBI prokaryotic reference genomes on 7/22/26.
+datasets download genome taxon 2 --reference --include genome --dehydrated --filename genome.zip
+unzip genome.zip -d genome
+datasets rehydrate --directory genome  --gzip 
+gzip -r -d ./
+
+# Concatenate all genomes into one multifasta file database for nhmmer search.
+find . -name \*.fna -type f -exec cat {} + > /workdir/crp86/all_genomes.fasta 
+
+# Get all NCBI Nucleotide database accessions within each assembly file. Used to match GCF and NC accessions.
+# GCF and NC accessions were extracted from strings in GCF_accessions_bact_072126.txt using the R script "GCF_nuccore_strsplit_CSH.R"
+grep -r -F '>' /workdir/crp86/db/genome/ncbi_dataset/data > GCF_accessions_bact_072126.txt 
+
+# Download metadata for genomes. gcfs.txt includes GCF accessions for all genomes in our database.
+datasets summary genome accession --inputfile gcfs.txt --as-json-lines > metadata_081126.json 
+
+# Download taxonomy/lineage for each assembly based on taxid. Got taxids from metadata_081126.json.
+datasets summary taxonomy taxon --inputfile taxids.txt --as-json-lines > taxonomies_081126.json 
+
+
+### --- SEARCH FOR TRANSLATION TERMINATION PROTEINS --- ###
+
+# Example of protein HMMER search for RF1. Repeated for all proteins.
+/programs/mafft/bin/mafft prfA_prot.fasta > prfA_prot_align.fasta  
+/programs/hmmer-3.3/bin/hmmbuild prfA_prot.hmm prfA_prot_align.fasta 
+nohup /programs/hmmer-3.3/bin/hmmsearch --tblout prfA_prot_HMMER_5e2.csv -E 5e-2 prfA_prot.hmm all_prot.fasta 
+
+# Get the genome assembly accessions (GCF_######.#) that contain the protein HMMER hits based on protein accessions (WP_###, YP_###, etc.).
+grep -r -F -f prfA_prot_accs.txt db/prot/ncbi_dataset/data > prfA_prot_genome_accs_long.txt  
+awk -F'[/:> ]+' '{print $5 "\t" $7}' prfA_prot_genome_accs_long.txt > prfA_GCF_WP_accs.tsv 
+
+# Example of nHMMER search for prfA. 
+/programs/mafft/bin/mafft prfA.fasta > prfA_align.fasta 
+/programs/hmmer-3.3/bin/hmmbuild prfA.hmm prfA_align.fasta 
+nohup /programs/hmmer-3.3/bin/nhmmer --tblout prfA_HMMER_5e2.csv -E 5e-2 prfA.hmm all_genomes.fasta 
+
+
+### --- BUILD MAXIMUM-LIKELIHOOD TREES --- ###
+
+# Get file locations for genomes in database. 
+find /workdir/crp86/db/genome/ncbi_dataset/data -type f -name "*.fna" -exec ls {} \; > fasta_files.txt   
+
+# Build maximum-likelihood tree with GToTree v1.8.19 pipeline + Universal gene set (16 proteins) from Hug et al. 2016. 
+# Pipeline used the following programs: HMMER3 v3.4, Muscle 5.1.linux64, TrimAl v1.5.rev1, Prodigal v2.6.3, FastTree2 v2.1.11, GNU Parallel v20260722.
+GToTree -f fasta_files_filt.txt -H Universal -j 10 –G 0.4 -c 0.3 -o tree_out_j10 
+
+
