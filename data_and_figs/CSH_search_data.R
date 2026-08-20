@@ -96,9 +96,14 @@ df_prmC_gcf = read_tsv("prmC_GCF_WP_accs.tsv", col_names = c("assembly", "prot_a
 df_pylS_gcf = read_tsv("pylS_GCF_WP_accs.tsv", col_names = c("assembly", "prot_acc"))
 df_selB_gcf = read_tsv("selB_GCF_WP_accs.tsv", col_names = c("assembly", "prot_acc"))
 
+df_trna = read_tsv("no_rf_genomes_trna.csv", skip = 1) 
+df_sup = df_trna %>%
+  filter(Type == "Sup")
+df_sec = df_trna %>%
+  filter(Type == "SeC")
+
 df = data.frame(cbind(df_GCF_nc_tax, prfA = (df_GCF_nc_tax$assembly %in% df_prfA_gcf$assembly), prfB = (df_GCF_nc_tax$assembly %in% df_prfB_gcf$assembly), prfC = (df_GCF_nc_tax$assembly %in% df_prfC_gcf$assembly), prfH = (df_GCF_nc_tax$assembly %in% df_prfH_gcf$assembly), prmC = (df_GCF_nc_tax$assembly %in% df_prmC_gcf$assembly), selB = (df_GCF_nc_tax$assembly %in% df_selB_gcf$assembly), pylS = (df_GCF_nc_tax$assembly %in% df_pylS_gcf$assembly)
 ))
-
 
 
 # Multiple contigs, scaffolds, or chromosomes can make up an assembly. Identify gene hits across all contigs/scaffolds/chromosomes in each assembly. 
@@ -127,8 +132,13 @@ df_distinct = inner_join(names, bools, by = "assembly") %>%
   filter(checkm_contamination < 10) %>%
   distinct(assembly, .keep_all = TRUE) %>%
   drop_na(phylum) %>%
-  mutate(across(c(prfA:pylS), as.logical))
+  mutate(across(c(prfA:pylS), as.logical)) 
 
+df_distinct = df_distinct %>%
+  mutate(sup_trna = ifelse(df_distinct$nuccore %in% df_sup$Name, 1, 0), 
+       sec_trna = ifelse(df_distinct$nuccore %in% df_sec$Name, 1, 0)) %>%
+  mutate(sup_trna = ifelse(df_distinct$nuccore %in% df_trna$Name, sup_trna, NA), 
+         sec_trna = ifelse(df_distinct$nuccore %in% df_trna$Name, sec_trna, NA))
 
 # Rename taxonomy to be consistent with Coleman et al 2021? 
 df_distinct$phylum[df_distinct$phylum == "delta/epsilon subdivisions"] = "Pseudomonadota"
