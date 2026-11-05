@@ -6,9 +6,8 @@ library(phangorn)
 library(ggnewscale)
 library(castor)
 library(ggbreak)
-library(ggprism)
 
-setwd("C://Users//cassp//Box Sync//Feaga Lab//Cassidy Prince//CSH")
+setwd("C:/Users/princecr/Documents/GitHub/CSH_termination_conservation/data")
 
 # Define function to format tables for the tree.
 table_for_tree = function(phylum, gene, accessions){
@@ -17,6 +16,7 @@ table_for_tree = function(phylum, gene, accessions){
   rownames(table_new) = accessions
   return(table_new)
 }
+
 
 # Upload dataframe containing NCBI Assembly and Nucleotide accession numbers, assembly statistics, taxonomy, and gene presence.(Table S1).
 df_GCF_nc_compressed = read.csv("df_csh_081126.csv") 
@@ -33,7 +33,7 @@ n_vals = dfShort %>%
   group_by(phylum) %>%
   summarize(n = n())
 
-random = read.csv("C://Users//cassp//Box Sync//Feaga Lab//Cassidy Prince//Daniel//random_genomes_dt_tree_051826.csv") %>%
+random = read.csv("random_genomes_dt_tree_051826.csv") %>%
   mutate(X = assembly) %>%
   filter(phylum != "Cyanobacteriota" & phylum != "Bacteroidota" & phylum != "Planctomycetota" & phylum != "Verrucomicrobiota")
 
@@ -42,7 +42,7 @@ random = column_to_rownames(random, 'X')
 ####### ---- Collapsed tree ---- #######
 
 # Upload tree.
-tree = read.newick("C://Users//cassp//Box Sync//Feaga Lab//Cassidy Prince//Daniel//phyla_051826.tre")
+tree = read.newick("phyla_051826.tre")
 
 # Fix GCF accession labels and drop two leaves that are duplicated phyla.
 tree$tip.label = sub("_([A-Z]|_).*", "", tree$tip.label)
@@ -52,31 +52,41 @@ tree_trim = drop.tip(tree, tip = c("GCF_041929205.1", "GCF_046000445.1", "GCF_03
 tree_mid = midpoint(tree_trim)
 
 # Format tables for gene presence to append to the tree.
-table_prfA = table_for_tree(dfShort$phylum, dfShort$prfA, random$assembly)
-table_prfB = table_for_tree(dfShort$phylum, dfShort$prfB, random$assembly)
-table_prfC = table_for_tree(dfShort$phylum, dfShort$prfC, random$assembly)
-table_prmC = table_for_tree(dfShort$phylum, dfShort$prmC, random$assembly)
-table_prfH = table_for_tree(dfShort$phylum, dfShort$prfH, random$assembly)
-table_selB = table_for_tree(dfShort$phylum, dfShort$selB, random$assembly)
-table_pylS = table_for_tree(dfShort$phylum, dfShort$pylS, random$assembly)
+genes = dfShort %>%
+  group_by(phylum) %>%
+  summarize(n = n(), RF1 = sum(prfA)/n*100, RF2 = sum(prfB)/n*100, RF3 = sum(prfC)/n*100, PrmC = sum(prmC)/n*100, PrfH = sum(prfH)/n*100) %>%
+  left_join(random %>% 
+              mutate(phylum = gsub("Actinobacteriota", "Actinomycetota", phylum)) %>%
+              select(phylum, assembly), by = join_by(phylum)) %>%
+  filter(phylum != "Chlorobiota") %>%
+  relocate(assembly) %>%
+  as.data.frame()
 
-genes = data.frame(cbind(RF1 = table_prfA$gene, RF2 = table_prfB$gene, RF3 = table_prfC$gene, PrmC = table_prmC$gene, PrfH = table_prfH$gene, SelB = table_selB$gene, PylS = table_pylS$gene))
-rownames(genes) = rownames(random)
+
+rownames(genes) = genes$assembly
 
 
 # Plot the tree and heatmap.
-p = ggtree(tree_mid) %<+% random + 
+p = ggtree(tree_mid) %<+% genes + 
   xlim(0, 10) + 
   geom_tiplab(aes(label=phylum), size = 4) + 
   geom_nodepoint(aes(fill = as.numeric(label)*100), size = 2, shape = 21) + 
-  scale_fill_gradient(low = "white", high = "black", name = "Bootstrap\npercentage") + 
+  scale_fill_gradient(low = "white", high = "black", name = "Bootstrap\npercentage", limits = c(0,100)) + 
   new_scale_fill()
 
-gheatmap(p, genes, offset = 5.5, width=2, font.size=3.5, colnames = TRUE, color=NA, colnames_angle = 45, colnames_offset_y = -0.2, colnames_offset_x = -0.15) + 
-  scale_fill_viridis_c(option="B", direction = -1, name="Percent\nwith gene")
+gheatmap(p, genes[c("RF1", "RF2", "RF3", "PrmC")], offset = 5.2, width=1.2, font.size=3.5, colnames = TRUE, color=NA, colnames_angle = 45, colnames_offset_y = -0.2, colnames_offset_x = -0.15) + 
+  scale_fill_viridis_c(option="B", direction = -1, name="Percent\nwith protein") +
+  theme(legend.position = c(0.8,0.5))
 
-ggsave("CSH_tree_072126.png", width = 8.5, height = 6.4, dpi = 600, units = "in")
+ggsave("../figures/CSH_tree_110526.png", width = 7.5, height = 5.6, dpi = 600, units = "in")
 
+
+
+gheatmap(p, genes[c("RF1", "RF2", "RF3", "PrmC", "PrfH")], offset = 5.2, width=1.6, font.size=3.5, colnames = TRUE, color=NA, colnames_angle = 45, colnames_offset_y = -0.2, colnames_offset_x = -0.15) + 
+  scale_fill_viridis_c(option="B", direction = -1, name="Percent\nwith protein")  +
+  theme(legend.position = c(0.82,0.5))
+
+ggsave("../figures/CSH_tree_prfh_110526.png", width = 7.5, height =5.6, dpi = 600, units = "in")
 
 
 #### Full SNP tree
@@ -120,9 +130,9 @@ tree$tip.label = sub("_([A-Z]|_).*", "", tree$tip.label)
 
 tree$tip.label = str_extract(tree$tip.label, "[^_]*_[^_]*")
 
+tree_trim = drop.tip(tree, tip = c("GCF_007993755.1", "GCF_003258315.1", "GCF_007993775.1", "GCF_003260125.1", "GCF_004005565.1", "GCF_007997015.1", "GCF_016097415.1", "GCF_900128535.1", "GCF_918320885.1"))
 
-
-p = ggtree(tree, layout="circular", linewidth=0.2)
+p = ggtree(tree_trim, layout="circular", linewidth=0.15)
 
 p2 = gheatmap(p, df_prfA,  width=0.07, offset = 0, colnames = FALSE, color=NA) +
   scale_fill_manual(values=c("FALSE" = "white", "TRUE" = "dodgerblue")) + 
@@ -138,12 +148,14 @@ p4 = gheatmap(p3, df_prfC,  width=0.07, offset = 0.36, colnames = FALSE, color=N
 
 p5 = gheatmap(p4, df_prmC,  width=0.07, offset = 0.54, colnames = FALSE, color=NA) +
   scale_fill_manual(values=c("FALSE" = "white", "TRUE" = "yellow3")) + 
-  new_scale_fill()
+  new_scale_fill() +
+  theme(legend.position = "none")
 
 
 p6 = gheatmap(p5, df_prfH,  width=0.07, offset = 0.72, colnames = FALSE, color=NA) +
-  scale_fill_manual(values=c("FALSE" = "white", "TRUE" = "pink")) + 
-  new_scale_fill()
+  scale_fill_manual(values=c("FALSE" = "white", "TRUE" = "orange2")) + 
+  new_scale_fill() +
+  theme(legend.position = "none")
 
 p7 = gheatmap(p6, df_selB,  width=0.07, offset = 0.96, colnames = FALSE, color=NA) +
   scale_fill_manual(values=c("FALSE" = "white", "TRUE" = "orange2")) + 
@@ -154,7 +166,13 @@ p8 = gheatmap(p7, df_pylS,  width=0.07, offset = 1.14, colnames = FALSE, color=N
   new_scale_fill()
 
 
+ggsave("../figures/CSH_fullphylo_prfH_110526.png", p6, width = 7.5, height = 6, dpi = 600, units = "in")
 
-gheatmap(p8, df_phylum, offset=1.6, width=0.1, font.size=1, colnames = FALSE, color=NA) +
+ggsave("../figures/CSH_fullphylo_noprfH_110526.png", p5, width = 7.5, height = 6, dpi = 600, units = "in")
+
+p_phylum = gheatmap(p6, df_phylum, offset=1.6, width=0.1, font.size=1, colnames = FALSE, color=NA) +
   theme(text=element_text(size=10)) +
-  scale_fill_discrete(name = "Phylum/group", na.value = "white")
+  scale_fill_discrete(name = "Phylum/group", na.value = "white") 
+
+ggsave("../figures/CSH_fullphylo_phylogeny_110526.png", p_phylum, width = 10, height = 6, dpi = 600, units = "in")
+

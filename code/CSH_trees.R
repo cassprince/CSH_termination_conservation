@@ -5,7 +5,7 @@ library(castor)
 library(phangorn)
 library(janitor)
 
-setwd("C:/Users/cassp/Documents/GitHub/CSH_termination_conservation/data")
+setwd("C:/Users/princecr/Documents/GitHub/CSH_termination_conservation/data")
 
 
 read_phmmer = function(file) {
@@ -54,7 +54,7 @@ p = ggtree(tree_mid, size=0.2) %<+% df_tree + xlim(0,10) +
 
 gheatmap(p, df_tree %>% select(location),offset = 0, width=0.4, font.size=1.5, colnames = FALSE, color=NA)
 
-ggsave("C:/Users/cassp/Documents/GitHub/CSH_termination_conservation/figures/prf_spp_mid_tree.png", width = 9.5, height = 7)
+ggsave("C:/Users/princecr/Documents/GitHub/CSH_termination_conservation/figures/prf_spp_mid_tree_102926.png", width = 9.5, height = 7)
 
 
 
@@ -83,7 +83,7 @@ ggtree(etree_one, size=0.2) %<+% edf_one + xlim(0,10) +
 ggtree(etree_mid, size=0.2) %<+% edf_one + xlim(0,10) +
   geom_tiplab(aes(label = species), size = 2)
 
-ggsave("C:/Users/cassp/Documents/GitHub/CSH_termination_conservation/figures/erf_spp_mid_tree.png", width = 7, height = 4.5)
+ggsave("../figures/erf_spp_mid_tree_102926.png", width = 7, height = 4.5)
 
 
 
