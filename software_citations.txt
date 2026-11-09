@@ -28,3 +28,9 @@ Tange O. GNU Parallel 2018. doi.org/10.5281/zenodo.1146014
 
 Universal SCG-set
 Hug LA et al. A new view of the tree of life. Nat. Microbiol. 2016; 1, 1-6. doi.org/10.1038/NMICROBIOL.2016.48
+
+ggtree v4.2.1
+Guangchuang Y. Data Integration, Manipulation and Visualization of Phylogenetic Trees (1st edition). Chapman and Hall/CRC. 2022. doi.org/10.1201/9781003279242
+
+phangorn v2.12.1
+Schliep K. phangorn: phylogenetic analysis in R. Bioinformatics. 27(4), 592–593. doi.org/10.1093/bioinformatics/btq706
