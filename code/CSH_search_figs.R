@@ -89,7 +89,7 @@ gheatmap(p, genes[c("RF1", "RF2", "RF3", "PrmC", "PrfH")], offset = 5.2, width=1
 ggsave("../figures/CSH_tree_prfh_110526.png", width = 7.5, height =5.6, dpi = 600, units = "in")
 
 
-#### Full SNP tree
+#### Full tree
 
 df_all_hits = df_GCF_nc_compressed %>%
   select(assembly:pylS, -nuccore) %>%
@@ -155,7 +155,17 @@ p5 = gheatmap(p4, df_prmC,  width=0.07, offset = 0.54, colnames = FALSE, color=N
 p6 = gheatmap(p5, df_prfH,  width=0.07, offset = 0.72, colnames = FALSE, color=NA) +
   scale_fill_manual(values=c("FALSE" = "white", "TRUE" = "orange2")) + 
   new_scale_fill() +
-  theme(legend.position = "none")
+  theme(legend.position = "none") + theme(
+    panel.background = element_rect(fill = "transparent",
+                                    colour = NA_character_), # necessary to avoid drawing panel outline
+    panel.grid.major = element_blank(), # get rid of major grid
+    panel.grid.minor = element_blank(), # get rid of minor grid
+    plot.background = element_rect(fill = "transparent",
+                                   colour = NA_character_), # necessary to avoid drawing plot outline
+    legend.background = element_rect(fill = "transparent"),
+    legend.box.background = element_rect(fill = "transparent"),
+    legend.key = element_rect(fill = "transparent")
+  )
 
 p7 = gheatmap(p6, df_selB,  width=0.07, offset = 0.96, colnames = FALSE, color=NA) +
   scale_fill_manual(values=c("FALSE" = "white", "TRUE" = "orange2")) + 
@@ -166,7 +176,7 @@ p8 = gheatmap(p7, df_pylS,  width=0.07, offset = 1.14, colnames = FALSE, color=N
   new_scale_fill()
 
 
-ggsave("../figures/CSH_fullphylo_prfH_110526.png", p6, width = 7.5, height = 6, dpi = 600, units = "in")
+ggsave("../figures/CSH_fullphylo_prfH_112026.png", p6, width = 7.5, height = 6, dpi = 600, units = "in", bg = "transparent")
 
 ggsave("../figures/CSH_fullphylo_noprfH_110526.png", p5, width = 7.5, height = 6, dpi = 600, units = "in")
 

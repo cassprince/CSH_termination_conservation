@@ -40,7 +40,7 @@ df_tree = df %>%
 
 rownames(df_tree) = df_tree$accession
 
-tree_one = get_subtree_with_tips(tree, only_tips = df_one$accession)$subtree
+tree_one = get_subtree_with_tips(tree, only_tips = df_tree$accession)$subtree
 
 tree_mid = midpoint(tree_one)
 
